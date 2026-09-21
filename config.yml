@@ -1,0 +1,62 @@
+# Galaxy Profile README Configuration
+
+username: MKA930
+
+profile:
+  name: "MKA930"
+  tagline: "Backend & Systems Engineer"
+  company: ""
+  location: ""
+  bio: |
+    Backend & Systems Engineer since 2016.
+    Focused on high-concurrency systems, realtime pipelines, and end-to-end delivery.
+  philosophy: '"Reliable systems are built, not promised."'
+
+social:
+  email: "winston_cn@yeah.net"
+  linkedin: ""
+  website: ""
+
+galaxy_arms:
+  - name: "Backend"
+    color: "synapse_cyan"
+    items:
+      - "PHP"
+      - "Python"
+      - "Node.js"
+  - name: "Data & Realtime"
+    color: "dendrite_violet"
+    items:
+      - "MySQL"
+      - "Redis"
+      - "RabbitMQ"
+  - name: "IoT & DevOps"
+    color: "axon_amber"
+    items:
+      - "MQTT"
+      - "Socket.IO"
+      - "Docker"
+
+projects:
+  - repo: "MKA930/MKA930"
+    arm: 0
+    description: "Personal profile and engineering showcase."
+  - repo: "MKA930/galaxy-profile"
+    arm: 1
+    description: "Galaxy-themed profile banner generator."
+
+stats:
+  metrics:
+    - "commits"
+    - "stars"
+    - "prs"
+    - "issues"
+    - "repos"
+
+languages:
+  exclude:
+    - "HTML"
+    - "CSS"
+    - "Shell"
+    - "Makefile"
+  max_display: 8
