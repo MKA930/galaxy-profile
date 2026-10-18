@@ -1,7 +1,14 @@
 """SVG template: Galaxy Header — the signature spiral galaxy banner (850x280)."""
 
 import math
-from generator.utils import spiral_points, deterministic_random, esc, resolve_arm_colors
+from generator.utils import (
+    clip_text,
+    spiral_points,
+    deterministic_random,
+    esc,
+    resolve_arm_colors,
+    text_width_px,
+)
 
 # ── Module-level constants ──
 WIDTH, HEIGHT = 850, 280
@@ -185,8 +192,13 @@ def _build_spiral_arms(galaxy_arms, arm_colors, all_arm_points):
     return "\n".join(arm_paths), "\n".join(arm_particles)
 
 
-def _build_tech_labels(galaxy_arms, arm_colors, all_arm_points, cx, cy):
-    """Build tech dots, leader lines, and labels with radial placement."""
+def _build_tech_labels(galaxy_arms, arm_colors, all_arm_points, cx, cy, font_mono="monospace",
+                       bounds=None):
+    """Build tech dots, leader lines, and labels with radial placement.
+
+    Args:
+        bounds: optional (min_x, max_x) the labels must stay inside
+    """
     arm_dots = []
     outer_start = 8  # Only use outer 65% of spiral (indices 8-27 of 30)
 
@@ -225,6 +237,17 @@ def _build_tech_labels(galaxy_arms, arm_colors, all_arm_points, cx, cy):
             else:
                 anchor = "middle"
 
+            # Keep the label inside the banner (CJK item names are wider)
+            label_text = str(item)
+            if bounds:
+                min_x, max_x = bounds
+                label_w = text_width_px(label_text, 9)
+                if anchor == "start" and label_x + label_w > max_x:
+                    label_x = max_x - label_w
+                elif anchor == "end" and label_x - label_w < min_x:
+                    label_x = min_x + label_w
+                label_x = max(label_x, min_x)
+
             # Dot with opacity pulse animation (Step 7)
             arm_dots.append(
                 f'    <circle cx="{px:.1f}" cy="{py:.1f}" r="2.5" fill="{color}" opacity="0.85">\n'
@@ -241,14 +264,14 @@ def _build_tech_labels(galaxy_arms, arm_colors, all_arm_points, cx, cy):
             # Label glow (blurred duplicate behind — Step 9)
             arm_dots.append(
                 f'    <text x="{label_x:.1f}" y="{label_y + 3:.1f}" text-anchor="{anchor}" '
-                f'fill="{color}" font-size="9" font-family="monospace" opacity="0.2" '
-                f'filter="url(#label-glow)">{esc(item)}</text>'
+                f'fill="{color}" font-size="9" font-family="{font_mono}" opacity="0.2" '
+                f'filter="url(#label-glow)">{esc(label_text)}</text>'
             )
 
             # Main label (Step 9)
             arm_dots.append(
                 f'    <text x="{label_x:.1f}" y="{label_y + 3:.1f}" text-anchor="{anchor}" '
-                f'fill="{color}" font-size="9" font-family="monospace" opacity="0.85">{esc(item)}</text>'
+                f'fill="{color}" font-size="9" font-family="{font_mono}" opacity="0.85">{esc(label_text)}</text>'
             )
 
     return "\n".join(arm_dots)
@@ -294,7 +317,7 @@ def _build_orbital_rings(cx, cy, theme):
     )
 
 
-def _build_galaxy_core(cx, cy, theme, initial):
+def _build_galaxy_core(cx, cy, theme, initial, font_mono="monospace"):
     """Build the core layers (haze, glow, rings, solid core, initial)."""
     return (
         f'    <!-- Outer haze -->\n'
@@ -316,8 +339,20 @@ def _build_galaxy_core(cx, cy, theme, initial):
         f'filter="url(#core-bright-glow)" opacity="0.9"/>\n'
         f'    <!-- Initial -->\n'
         f'    <text x="{cx}" y="{cy + 5}" text-anchor="middle" fill="{theme["synapse_cyan"]}" '
-        f'font-size="14" font-weight="bold" font-family="monospace">{initial}</text>'
+        f'font-size="14" font-weight="bold" font-family="{font_mono}">{initial}</text>'
     )
+
+
+def compute_radial_bounds(galaxy_arms, cx, cy, width, height):
+    """Return the vertical half-extent of the spiral, in px.
+
+    Arm points are scaled by Y_SCALE, so the galaxy only occupies
+    cy ± MAX_RADIUS*Y_SCALE. The area above and below that band is free,
+    which is where the tagline and philosophy lines go.
+    """
+    top = cy - MAX_RADIUS * Y_SCALE
+    bottom = cy + MAX_RADIUS * Y_SCALE
+    return top, bottom
 
 
 def render(
@@ -325,21 +360,34 @@ def render(
     theme: dict,
     galaxy_arms: list,
     projects: list,
+    strings: dict | None = None,
 ) -> str:
     """Render the galaxy header SVG.
 
     Args:
-        config: full profile config dict
+        config: full profile config dict (already localized for this render)
         theme: color palette dict
         galaxy_arms: list of arm configs
         projects: list of project dicts
+        strings: localized string table (see generator.i18n)
     """
+    strings = strings or {}
+    fonts = strings.get("_fonts", {})
+    font_sans = fonts.get("sans", "sans-serif")
+    font_mono = fonts.get("mono", "monospace")
+
     username = config.get("username", "user")
     profile = config.get("profile", {})
     name = profile.get("name", username)
     tagline = profile.get("tagline", "")
     philosophy = profile.get("philosophy", "")
     initial = name[0].upper() if name else "?"
+
+    # Text is clipped to the banner width so long (CJK) lines never overflow
+    max_text_em = (WIDTH - 60) / 20.0
+    name = clip_text(name, max_text_em)
+    tagline = clip_text(tagline, (WIDTH - 60) / 12.0)
+    philosophy = clip_text(philosophy, (WIDTH - 60) / 11.0)
 
     arm_colors = resolve_arm_colors(galaxy_arms, theme)
 
@@ -377,10 +425,21 @@ def render(
     outer_nebula, inner_nebula = _build_nebulae(CENTER_X, CENTER_Y, theme)
     shoot_stars_str = _build_shooting_stars()
     arm_paths_str, arm_particles_str = _build_spiral_arms(galaxy_arms, arm_colors, all_arm_points)
-    arm_dots_str = _build_tech_labels(galaxy_arms, arm_colors, all_arm_points, CENTER_X, CENTER_Y)
+    arm_dots_str = _build_tech_labels(
+        galaxy_arms, arm_colors, all_arm_points, CENTER_X, CENTER_Y,
+        font_mono, bounds=(12, WIDTH - 12),
+    )
     project_stars_str = _build_project_stars(projects, galaxy_arms, arm_colors, all_arm_points)
     orbital_rings = _build_orbital_rings(CENTER_X, CENTER_Y, theme)
-    core = _build_galaxy_core(CENTER_X, CENTER_Y, theme, initial)
+    core = _build_galaxy_core(CENTER_X, CENTER_Y, theme, initial, font_mono)
+
+    # Text bands: name above the spiral, tagline and philosophy below it.
+    # Placing them relative to the galaxy's actual extent keeps CJK lines
+    # clear of the star field instead of colliding with it.
+    galaxy_top, galaxy_bottom = compute_radial_bounds(galaxy_arms, CENTER_X, CENTER_Y, WIDTH, HEIGHT)
+    name_y = max(22, galaxy_top - 30)
+    tagline_y = name_y + 18
+    philosophy_y = min(HEIGHT - 12, galaxy_bottom + 22)
 
     # ── Assemble SVG ──
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}">
@@ -494,7 +553,7 @@ def render(
 {core}
 
   <!-- 12. Profile text -->
-  <text x="{CENTER_X}" y="26" text-anchor="middle" fill="{theme['text_bright']}" font-size="20" font-weight="bold" font-family="sans-serif">{esc(name)}</text>
-  <text x="{CENTER_X}" y="44" text-anchor="middle" fill="{theme['text_dim']}" font-size="12" font-family="sans-serif">{esc(tagline)}</text>
-  <text x="{CENTER_X}" y="{HEIGHT - 12}" text-anchor="middle" fill="{theme['text_faint']}" font-size="11" font-family="monospace" font-style="italic">{esc(philosophy)}</text>
+  <text x="{CENTER_X}" y="{name_y}" text-anchor="middle" fill="{theme['text_bright']}" font-size="20" font-weight="bold" font-family="{font_sans}">{esc(name)}</text>
+  <text x="{CENTER_X}" y="{tagline_y}" text-anchor="middle" fill="{theme['text_dim']}" font-size="12" font-family="{font_sans}">{esc(tagline)}</text>
+  <text x="{CENTER_X}" y="{philosophy_y}" text-anchor="middle" fill="{theme['text_faint']}" font-size="11" font-family="{font_mono}" font-style="italic">{esc(philosophy)}</text>
 </svg>'''

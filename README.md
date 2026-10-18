@@ -68,6 +68,8 @@ All configuration lives in `config.yml`. See [`config.example.yml`](config.examp
 | Section | Description |
 |---------|-------------|
 | `username` | Your GitHub username (required) |
+| `locale` | Default locale: `en` or `zh` (optional, default `en`) |
+| `i18n` | Per-locale text overrides (tagline, philosophy, arm names, project descriptions) |
 | `profile` | Name, tagline, company, location, bio, philosophy |
 | `social` | Email, LinkedIn handle, website URL |
 | `galaxy_arms` | 3 focus areas — each with a name, color (`synapse_cyan`, `dendrite_violet`, `axon_amber`), and tech items |
@@ -119,6 +121,57 @@ GITHUB_TOKEN=ghp_your_token_here python -m generator.main
 To generate a token: [github.com/settings/tokens](https://github.com/settings/tokens) > Generate new token (classic) > select the `read:user` scope.
 
 The 4 SVGs are written to `assets/generated/`.
+
+### Multiple languages (zh / en)
+
+The generator can render every SVG in several locales. Output goes to
+per-locale directories:
+
+```
+assets/generated/
+├── en/          # English set
+│   ├── galaxy-header.svg
+│   └── ...
+└── zh/          # Chinese set
+    ├── galaxy-header.svg
+    └── ...
+```
+
+Configure it in `config.yml`:
+
+```yaml
+locale: en          # default locale; also copied to assets/generated/ root
+
+profile:
+  name: "MKA930"
+  tagline: "Backend & Systems Engineer"
+  philosophy: '"Reliable systems are built, not promised."'
+
+i18n:
+  zh:               # overrides applied when rendering the zh locale
+    tagline: "后端 & 系统工程师"
+    philosophy: "可靠的系统是一行行写出来的，不是承诺出来的。"
+    galaxy_arms:    # translated focus-area names, matched by index
+      - "后端"
+      - "数据与实时"
+      - "物联网与运维"
+    projects:       # translated project descriptions, matched by index
+      - "个人主页与工程作品集"
+```
+
+- `locale` — which language the root-level copy uses (`en`, `zh`).
+- `i18n.<locale>` — per-locale text: `name`, `tagline`, `philosophy`,
+  `galaxy_arms` (list), `projects` (list). Any field you omit falls back to
+  the top-level value or the built-in English label.
+
+Render only specific locales:
+
+```bash
+python -m generator.main --locales en,zh
+```
+
+CJK text gets its own font stack (PingFang SC / Microsoft YaHei / Noto Sans SC)
+and width-aware wrapping, so Chinese labels never overflow the cards.
 
 ### Viewing SVGs
 

@@ -116,9 +116,9 @@
     <polyline points="5,199 5,215 21,215" fill="none" stroke="#64748b" stroke-width="1.5"/>
     <polyline points="829,215 845,215 845,199" fill="none" stroke="#64748b" stroke-width="1.5"/>
   </g>
-  <text x="30" y="38" fill="#64748b" font-size="11" font-family="monospace" letter-spacing="3">FEATURED SYSTEMS</text>
-  <circle cx="218" cy="34" r="3" fill="#00d4ff" opacity="0.8"><animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/></circle>
-  <text x="820" y="38" fill="#64748b" font-size="10" font-family="monospace" text-anchor="end" opacity="0.5">SYS 2/2 ONLINE</text>
+  <text x="30" y="38" fill="#64748b" font-size="11" font-family="'JetBrains Mono', 'SFMono-Regular', 'Cascadia Mono', 'Microsoft YaHei Mono', 'Noto Sans Mono CJK SC', monospace" letter-spacing="2">核心系统</text>
+  <circle cx="94.0" cy="34" r="3" fill="#00d4ff" opacity="0.8"><animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/></circle>
+  <text x="820" y="38" fill="#64748b" font-size="10" font-family="'JetBrains Mono', 'SFMono-Regular', 'Cascadia Mono', 'Microsoft YaHei Mono', 'Noto Sans Mono CJK SC', monospace" text-anchor="end" opacity="0.5">系统 2/2 在线</text>
 
   <!-- Project cards -->
   <g opacity="0" style="animation: card-appear 0.6s ease 0.0s forwards">
@@ -132,10 +132,10 @@
     <circle cx="226.66666666666666" cy="85" r="8" fill="#00d4ff" opacity="0.15" filter="url(#proj-glow-0)"/>
     <circle cx="226.66666666666666" cy="85" r="5" fill="#00d4ff" opacity="0.7"><animate attributeName="opacity" values="0.5;0.9;0.5" dur="3s" begin="0.0s" repeatCount="indefinite"/><animate attributeName="r" values="4.5;5.5;4.5" dur="3s" begin="0.0s" repeatCount="indefinite"/></circle>
     <circle cx="226.66666666666666" cy="85" r="2" fill="#ffffff" opacity="0.9"/>
-    <text x="226.66666666666666" y="111" fill="#f1f5f9" font-size="14" font-weight="bold" font-family="sans-serif" text-anchor="middle">MKA930</text>
-    <text x="226.66666666666666" y="129" fill="#94a3b8" font-size="11" font-family="sans-serif" text-anchor="middle">Personal profile and engineering showcase.</text>
-    <rect x="194.16666666666666" y="163" width="65" height="18" rx="9" ry="9" fill="#00d4ff" opacity="0.12"/>
-    <text x="226.66666666666666" y="175" fill="#00d4ff" font-size="9" font-family="monospace" text-anchor="middle" opacity="0.85">Backend</text>
+    <text x="226.66666666666666" y="111" fill="#f1f5f9" font-size="14" font-weight="bold" font-family="'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', sans-serif" text-anchor="middle">MKA930</text>
+    <text x="226.66666666666666" y="129" fill="#94a3b8" font-size="11" font-family="'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', sans-serif" text-anchor="middle">个人主页与工程作品集</text>
+    <rect x="208.7" y="163" width="36.0" height="18" rx="9" ry="9" fill="#00d4ff" opacity="0.12"/>
+    <text x="226.66666666666666" y="175" fill="#00d4ff" font-size="9" font-family="'JetBrains Mono', 'SFMono-Regular', 'Cascadia Mono', 'Microsoft YaHei Mono', 'Noto Sans Mono CJK SC', monospace" text-anchor="middle" opacity="0.85">后端</text>
   </g>
   <g opacity="0" style="animation: card-appear 0.6s ease 0.3s forwards">
     <rect x="453.33333333333337" y="55" width="340" height="140" rx="8" ry="8" fill="url(#card-bg-1)" stroke="#1a2332" stroke-width="1"/>
@@ -148,10 +148,10 @@
     <circle cx="623.3333333333334" cy="85" r="8" fill="#a78bfa" opacity="0.15" filter="url(#proj-glow-1)"/>
     <circle cx="623.3333333333334" cy="85" r="5" fill="#a78bfa" opacity="0.7"><animate attributeName="opacity" values="0.5;0.9;0.5" dur="3s" begin="0.3s" repeatCount="indefinite"/><animate attributeName="r" values="4.5;5.5;4.5" dur="3s" begin="0.3s" repeatCount="indefinite"/></circle>
     <circle cx="623.3333333333334" cy="85" r="2" fill="#ffffff" opacity="0.9"/>
-    <text x="623.3333333333334" y="111" fill="#f1f5f9" font-size="14" font-weight="bold" font-family="sans-serif" text-anchor="middle">galaxy-profile</text>
-    <text x="623.3333333333334" y="129" fill="#94a3b8" font-size="11" font-family="sans-serif" text-anchor="middle">Galaxy-themed profile banner generator.</text>
-    <rect x="562.8333333333334" y="163" width="121" height="18" rx="9" ry="9" fill="#a78bfa" opacity="0.12"/>
-    <text x="623.3333333333334" y="175" fill="#a78bfa" font-size="9" font-family="monospace" text-anchor="middle" opacity="0.85">Data &amp; Realtime</text>
+    <text x="623.3333333333334" y="111" fill="#f1f5f9" font-size="14" font-weight="bold" font-family="'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', sans-serif" text-anchor="middle">galaxy-profile</text>
+    <text x="623.3333333333334" y="129" fill="#94a3b8" font-size="11" font-family="'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', sans-serif" text-anchor="middle">银河主题的个人主页横幅生成器</text>
+    <rect x="592.8" y="163" width="61.0" height="18" rx="9" ry="9" fill="#a78bfa" opacity="0.12"/>
+    <text x="623.3333333333334" y="175" fill="#a78bfa" font-size="9" font-family="'JetBrains Mono', 'SFMono-Regular', 'Cascadia Mono', 'Microsoft YaHei Mono', 'Noto Sans Mono CJK SC', monospace" text-anchor="middle" opacity="0.85">数据与实时</text>
   </g>
 
   <!-- Global scan line -->

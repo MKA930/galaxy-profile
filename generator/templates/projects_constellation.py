@@ -1,8 +1,17 @@
 """SVG template: Featured Systems / Projects Constellation (850x220)."""
 
-from generator.utils import wrap_text, deterministic_random, esc, resolve_arm_colors
+from generator.utils import (
+    deterministic_random,
+    esc,
+    resolve_arm_colors,
+    text_width_px,
+    wrap_text_cjk,
+)
 
 WIDTH, HEIGHT = 850, 220
+
+# Inner padding on each side of a project card, in px.
+CARD_PADDING = 16
 
 
 def _build_defs(n, card_width, gap, card_colors, theme):
@@ -143,8 +152,13 @@ def _build_connections(n, card_width, gap):
     return "\n".join(conn_lines)
 
 
-def _build_title_area(n, width, height, theme):
+def _build_title_area(n, width, height, theme, strings=None):
     """Build the corner brackets, title, status dot, and status text."""
+    strings = strings or {}
+    fonts = strings.get("_fonts", {})
+    font_mono = fonts.get("mono", "monospace")
+    tracking = strings.get("_tracking", 3)
+    title = strings.get("projects_title", "FEATURED SYSTEMS")
     title_parts = []
     # Corner brackets (4 L-shaped pairs)
     bk = theme["text_faint"]
@@ -164,31 +178,38 @@ def _build_title_area(n, width, height, theme):
     # Section title
     title_parts.append(
         f'  <text x="30" y="38" fill="{theme["text_faint"]}" font-size="11" '
-        f'font-family="monospace" letter-spacing="3">FEATURED SYSTEMS</text>'
+        f'font-family="{font_mono}" letter-spacing="{tracking}">{esc(title)}</text>'
     )
-    # Pulsing status dot
+    # Pulsing status dot — sits just past the measured end of the title
+    title_end = 30 + text_width_px(title, 11) + tracking * max(len(title) - 1, 0)
+    dot_x = title_end + 14
     cyan = theme.get("synapse_cyan", "#00d4ff")
     title_parts.append(
-        f'  <circle cx="218" cy="34" r="3" fill="{cyan}" opacity="0.8">'
+        f'  <circle cx="{dot_x:.1f}" cy="34" r="3" fill="{cyan}" opacity="0.8">'
         f'<animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>'
         f'</circle>'
     )
     # Right-aligned status text
+    status = strings.get("systems_online", "SYS {n}/{n} ONLINE").format(n=n)
     title_parts.append(
         f'  <text x="{width - 30}" y="38" fill="{theme["text_faint"]}" font-size="10" '
-        f'font-family="monospace" text-anchor="end" opacity="0.5">SYS {n}/{n} ONLINE</text>'
+        f'font-family="{font_mono}" text-anchor="end" opacity="0.5">{esc(status)}</text>'
     )
     return "\n".join(title_parts)
 
 
-def _build_project_card(i, proj, arm, color, card_width, card_x, theme):
+def _build_project_card(i, proj, arm, color, card_width, card_x, theme, strings=None):
     """Build a single project card."""
+    strings = strings or {}
+    fonts = strings.get("_fonts", {})
+    font_sans = fonts.get("sans", "sans-serif")
+    font_mono = fonts.get("mono", "monospace")
     card_cx = card_x + card_width / 2
     repo_name = proj["repo"].split("/")[-1] if "/" in proj["repo"] else proj["repo"]
     desc = proj.get("description", "")
-    # Wrap description to fit card width (approx chars)
-    max_chars = int(card_width / 7.5)
-    desc_lines = wrap_text(desc, max_chars)
+    # Wrap by rendered width so CJK text does not overflow the card
+    max_em = (card_width - CARD_PADDING * 2) / 11.0
+    desc_lines = wrap_text_cjk(desc, max_em, max_lines=2)
 
     delay = f"{i * 0.3}s"
 
@@ -252,7 +273,7 @@ def _build_project_card(i, proj, arm, color, card_width, card_x, theme):
     # Project name (centered)
     card_parts.append(
         f'    <text x="{card_cx}" y="111" fill="{theme["text_bright"]}" '
-        f'font-size="14" font-weight="bold" font-family="sans-serif" '
+        f'font-size="14" font-weight="bold" font-family="{font_sans}" '
         f'text-anchor="middle">{esc(repo_name)}</text>'
     )
 
@@ -261,21 +282,22 @@ def _build_project_card(i, proj, arm, color, card_width, card_x, theme):
         y_pos = 129 + j * 15
         card_parts.append(
             f'    <text x="{card_cx}" y="{y_pos}" fill="{theme["text_dim"]}" '
-            f'font-size="11" font-family="sans-serif" '
+            f'font-size="11" font-family="{font_sans}" '
             f'text-anchor="middle">{esc(line)}</text>'
         )
 
-    # Category tag (pill shape)
+    # Category tag (pill shape) — width measured, not assumed, so CJK arm
+    # names get a correctly sized pill
     tag_text = arm["name"]
-    tag_width = len(tag_text) * 7 + 16
+    tag_width = max(36, text_width_px(tag_text, 9) + 16)
     tag_x = card_cx - tag_width / 2
     card_parts.append(
-        f'    <rect x="{tag_x}" y="163" width="{tag_width}" height="18" rx="9" ry="9" '
+        f'    <rect x="{tag_x:.1f}" y="163" width="{tag_width:.1f}" height="18" rx="9" ry="9" '
         f'fill="{color}" opacity="0.12"/>'
     )
     card_parts.append(
         f'    <text x="{card_cx}" y="175" fill="{color}" '
-        f'font-size="9" font-family="monospace" text-anchor="middle" '
+        f'font-size="9" font-family="{font_mono}" text-anchor="middle" '
         f'opacity="0.85">{esc(tag_text)}</text>'
     )
 
@@ -295,25 +317,30 @@ def _build_scan_line(width, theme):
     )
 
 
-def render(projects: list, galaxy_arms: list, theme: dict) -> str:
+def render(projects: list, galaxy_arms: list, theme: dict, strings: dict | None = None) -> str:
     """Render the projects constellation SVG.
 
     Args:
         projects: list of project dicts with repo, arm, description
         galaxy_arms: list of arm configs for color mapping
         theme: color palette dict
+        strings: localized string table (see generator.i18n)
     """
+    strings = strings or {}
+    fonts = strings.get("_fonts", {})
+    font_mono = fonts.get("mono", "monospace")
     all_arm_colors = resolve_arm_colors(galaxy_arms, theme)
 
     n = min(len(projects), 3)
 
     if n == 0:
         # No projects — render an empty card
+        empty_text = strings.get("no_projects", "No featured projects configured")
         return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}">
   <rect x="0.5" y="0.5" width="{WIDTH - 1}" height="{HEIGHT - 1}" rx="12" ry="12"
         fill="{theme['nebula']}" stroke="{theme['star_dust']}" stroke-width="1"/>
   <text x="{WIDTH / 2}" y="{HEIGHT / 2}" fill="{theme['text_faint']}" font-size="12"
-        font-family="monospace" text-anchor="middle" dominant-baseline="middle">No featured projects configured</text>
+        font-family="{font_mono}" text-anchor="middle" dominant-baseline="middle">{esc(empty_text)}</text>
 </svg>'''
 
     # Adaptive card sizing
@@ -354,7 +381,7 @@ def render(projects: list, galaxy_arms: list, theme: dict) -> str:
     conn_str = _build_connections(n, card_width, gap)
 
     # ── Layer 5: Title area ──
-    title_str = _build_title_area(n, WIDTH, HEIGHT, theme)
+    title_str = _build_title_area(n, WIDTH, HEIGHT, theme, strings)
 
     # ── Layer 6: Project cards ──
     cards = []
@@ -364,7 +391,7 @@ def render(projects: list, galaxy_arms: list, theme: dict) -> str:
         color = card_colors[i]
         card_x = gap + i * (card_width + gap)
 
-        cards.append(_build_project_card(i, proj, arm, color, card_width, card_x, theme))
+        cards.append(_build_project_card(i, proj, arm, color, card_width, card_x, theme, strings))
 
     cards_str = "\n".join(cards)
 

@@ -1,18 +1,23 @@
 """SVG template: Mission Telemetry stats card (850x180)."""
 
-from generator.utils import METRIC_ICONS, METRIC_LABELS, METRIC_COLORS, format_number
+from generator.utils import METRIC_ICONS, METRIC_LABEL_KEYS, METRIC_COLORS, format_number
 
 WIDTH, HEIGHT = 850, 180
 
 
-def render(stats: dict, metrics: list, theme: dict) -> str:
+def render(stats: dict, metrics: list, theme: dict, strings: dict | None = None) -> str:
     """Render the stats card SVG.
 
     Args:
         stats: dict with keys like commits, stars, prs, issues, repos
         metrics: list of metric keys to display
         theme: color palette dict
+        strings: localized string table (see generator.i18n)
     """
+    strings = strings or {}
+    fonts = strings.get("_fonts", {})
+    font_sans = fonts.get("sans", "sans-serif")
+    font_mono = fonts.get("mono", "monospace")
     cell_width = WIDTH / len(metrics)
 
     # Build metric cells
@@ -22,7 +27,7 @@ def render(stats: dict, metrics: list, theme: dict) -> str:
         cx = cell_width * i + cell_width / 2
         icon_color = theme.get(METRIC_COLORS.get(key, "synapse_cyan"), "#00d4ff")
         value = format_number(stats.get(key, 0))
-        label = METRIC_LABELS.get(key, key.title())
+        label = strings.get(METRIC_LABEL_KEYS.get(key, ""), key.title())
         icon_path = METRIC_ICONS.get(key, "")
         delay = f"{i * 0.3}s"
 
@@ -32,9 +37,9 @@ def render(stats: dict, metrics: list, theme: dict) -> str:
           {icon_path}
         </svg>
       </g>
-      <text x="0" y="2" text-anchor="middle" fill="{icon_color}" font-size="28" font-weight="bold" font-family="sans-serif" opacity="0.35" filter="url(#num-glow)">{value}</text>
-      <text x="0" y="2" text-anchor="middle" fill="{theme['text_bright']}" font-size="28" font-weight="bold" font-family="sans-serif">{value}</text>
-      <text x="0" y="20" text-anchor="middle" fill="{theme['text_faint']}" font-size="11" font-family="monospace" letter-spacing="1">{label}</text>
+      <text x="0" y="2" text-anchor="middle" fill="{icon_color}" font-size="28" font-weight="bold" font-family="{font_sans}" opacity="0.35" filter="url(#num-glow)">{value}</text>
+      <text x="0" y="2" text-anchor="middle" fill="{theme['text_bright']}" font-size="28" font-weight="bold" font-family="{font_sans}">{value}</text>
+      <text x="0" y="20" text-anchor="middle" fill="{theme['text_faint']}" font-size="11" font-family="{font_mono}" letter-spacing="1">{label}</text>
     </g>''')
 
         # Vertical divider between cells (not after last)
@@ -47,6 +52,8 @@ def render(stats: dict, metrics: list, theme: dict) -> str:
 
     cells_str = "\n".join(cells)
     dividers_str = "\n".join(dividers)
+    title = strings.get("stats_title", "MISSION TELEMETRY")
+    tracking = strings.get("_tracking", 3)
 
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}">
   <defs>
@@ -69,7 +76,7 @@ def render(stats: dict, metrics: list, theme: dict) -> str:
         fill="{theme['nebula']}" stroke="{theme['star_dust']}" stroke-width="1"/>
 
   <!-- Section title -->
-  <text x="30" y="38" fill="{theme['text_faint']}" font-size="11" font-family="monospace" letter-spacing="3">MISSION TELEMETRY</text>
+  <text x="30" y="38" fill="{theme['text_faint']}" font-size="11" font-family="{font_mono}" letter-spacing="{tracking}">{title}</text>
 
   <!-- Dividers -->
 {dividers_str}

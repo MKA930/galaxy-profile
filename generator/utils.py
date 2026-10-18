@@ -7,6 +7,16 @@ from xml.sax.saxutils import escape as xml_escape
 
 HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
+# Ranges that render as full-width glyphs (CJK ideographs, kana, hangul,
+# CJK punctuation, full-width forms). Used for width estimation and for
+# choosing where to break a line inside Chinese text — CJK has no spaces.
+WIDE_CHAR_RANGES = (
+    (0x1100, 0x115F), (0x2E80, 0x303E), (0x3041, 0x33FF),
+    (0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xA000, 0xA4CF),
+    (0xAC00, 0xD7A3), (0xF900, 0xFAFF), (0xFE30, 0xFE4F),
+    (0xFF00, 0xFF60), (0xFFE0, 0xFFE6),
+)
+
 # Default deep-space theme palette
 DEFAULT_THEME = {
     "void": "#080c14",
@@ -135,6 +145,15 @@ METRIC_LABELS = {
     "repos": "Repos",
 }
 
+# i18n string key per metric — resolved through generator.i18n at render time.
+METRIC_LABEL_KEYS = {
+    "commits": "metric_commits",
+    "stars": "metric_stars",
+    "prs": "metric_prs",
+    "issues": "metric_issues",
+    "repos": "metric_repos",
+}
+
 METRIC_COLORS = {
     "commits": "synapse_cyan",
     "stars": "axon_amber",
@@ -204,6 +223,98 @@ def wrap_text(text: str, max_chars: int) -> list:
     if current:
         lines.append(current)
     return lines
+
+
+def is_wide_char(ch: str) -> bool:
+    """True if the character renders full-width (CJK and friends)."""
+    code = ord(ch)
+    return any(lo <= code <= hi for lo, hi in WIDE_CHAR_RANGES)
+
+
+def char_width_em(ch: str) -> float:
+    """Approximate advance width of a single glyph, in em units."""
+    return 1.0 if is_wide_char(ch) else 0.55
+
+
+def text_width_em(text: str) -> float:
+    """Approximate rendered width of a string, in em units."""
+    return sum(char_width_em(ch) for ch in text)
+
+
+def text_width_px(text: str, font_size: float) -> float:
+    """Approximate rendered width of a string, in pixels."""
+    return text_width_em(text) * font_size
+
+
+def clip_text(text: str, max_em: float, ellipsis: str = "…") -> str:
+    """Truncate text to fit within max_em units, appending an ellipsis."""
+    text = str(text)
+    if text_width_em(text) <= max_em:
+        return text
+    budget = max_em - text_width_em(ellipsis)
+    out = ""
+    used = 0.0
+    for ch in text:
+        w = char_width_em(ch)
+        if used + w > budget:
+            break
+        out += ch
+        used += w
+    return out.rstrip() + ellipsis
+
+
+def wrap_text_cjk(text: str, max_em: float, max_lines: int = 2, ellipsis: str = "…") -> list:
+    """Wrap text by rendered width, mixing CJK character breaks with word breaks.
+
+    Latin runs are kept intact and only broken when a single word overflows;
+    CJK characters are breakable anywhere except before closing punctuation.
+    The last line is truncated with an ellipsis when the text overflows.
+    """
+    text = " ".join(str(text).split())
+    if not text:
+        return []
+
+    no_break_before = set("，。、；：！？）》」』】%,.;:!?)]}…—")
+    lines = []
+    current = ""
+    used = 0.0
+    i = 0
+
+    while i < len(text):
+        ch = text[i]
+        # Break CJK text into single characters, Latin runs into whole words.
+        if is_wide_char(ch) or ch in no_break_before:
+            token = ch
+        else:
+            j = i
+            while j < len(text) and not is_wide_char(text[j]) and text[j] not in no_break_before:
+                j += 1
+            token = text[i:j] or ch
+        i += len(token)
+
+        w = text_width_em(token)
+        # A trailing space at a line end does not consume room.
+        if used + w > max_em and current.strip():
+            lines.append(current.strip())
+            current = "" if token.strip() == "" else token
+            used = text_width_em(current)
+        else:
+            current += token
+            used += w
+
+        if len(lines) == max_lines:
+            break
+
+    if current.strip() and len(lines) < max_lines:
+        lines.append(current.strip())
+
+    # Anything left over means the text did not fit — mark the cut.
+    consumed = "".join(lines).replace(" ", "")
+    if len(consumed) < len(text.replace(" ", "")) and lines:
+        lines[-1] = clip_text(lines[-1], max_em, ellipsis)
+
+    return lines[:max_lines]
+
 
 
 def spiral_points(

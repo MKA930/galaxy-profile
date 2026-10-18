@@ -2,6 +2,9 @@
 
 username: MKA930
 
+# Default locale — also the version copied to assets/generated/ root
+locale: en
+
 profile:
   name: "MKA930"
   tagline: "Backend & Systems Engineer"
@@ -11,6 +14,22 @@ profile:
     Backend & Systems Engineer since 2016.
     Focused on high-concurrency systems, realtime pipelines, and end-to-end delivery.
   philosophy: '"Reliable systems are built, not promised."'
+
+# Per-locale text overrides: name / tagline / philosophy, plus translated
+# focus-area names and project descriptions (matched by index).
+i18n:
+  en:
+    name: "MKA930"
+  zh:
+    tagline: "后端 & 系统工程师"
+    philosophy: "可靠的系统是一行行写出来的，不是承诺出来的。"
+    galaxy_arms:
+      - "后端"
+      - "数据与实时"
+      - "物联网与运维"
+    projects:
+      - "个人主页与工程作品集"
+      - "银河主题的个人主页横幅生成器"
 
 social:
   email: "winston_cn@yeah.net"
